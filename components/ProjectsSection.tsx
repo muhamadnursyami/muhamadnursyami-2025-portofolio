@@ -7,7 +7,9 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import BlurText  from '@/components/BlurText/BlurText';
 import { LinkPreview } from "@/components/ui/link-preview";
-
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+gsap.registerPlugin(ScrollTrigger);
 export default function ProjectsSection() {
   const [active, setActive] = useState<(typeof cards)[number] | boolean | null>(
     null
@@ -33,6 +35,61 @@ export default function ProjectsSection() {
   }, [active]);
 
   useOutsideClick(ref, () => setActive(null));
+
+  // 🪄 ScrollTrigger for zoom in/out each project card
+  useEffect(() => {
+    const mm = gsap.matchMedia();
+
+    const reduceMotion =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    const ctx = gsap.context(() => {
+      const cards = gsap.utils.toArray<HTMLElement>(".project-card");
+
+      cards.forEach((el) => {
+        // Initial reveal: zoom in + fade + lift
+        gsap.fromTo(
+          el,
+          { opacity: 0, scale: 0.9, y: 40 },
+          {
+            opacity: 1,
+            scale: 1,
+            y: 0,
+            duration: reduceMotion ? 0.001 : 0.8,
+            ease: "power3.out",
+            clearProps: "transform,opacity",
+            scrollTrigger: {
+              trigger: el,
+              start: "top 85%",
+              toggleActions: "play none none reverse", // zoom in when entering, zoom out when leaving
+              once: false,
+            },
+          }
+        );
+
+        // Subtle dynamic zoom while scrolling through the card (optional but nice)
+        if (!reduceMotion) {
+          gsap.to(el, {
+            scale: 1.02,
+            ease: "none",
+            scrollTrigger: {
+              trigger: el,
+              start: "top 70%",
+              end: "bottom top",
+              scrub: true,
+            },
+          });
+        }
+      });
+    });
+
+    return () => {
+      ctx.revert();
+      mm.revert();
+      ScrollTrigger.getAll().forEach((st) => st.kill());
+    };
+  }, []);
 
   return (
     <>
@@ -89,11 +146,11 @@ export default function ProjectsSection() {
               {/* Image */}
               <motion.div layoutId={`image-${active.title}-${id}`}>
                 <Image
-                  width={200}
-                  height={200}
+                  width={1200}
+                  height={800}
                   src={active.src}
                   alt={active.title}
-                  className="w-full h-80 object-cover object-top"
+                  className="w-full h-auto object-contain object-top"
                 />
               </motion.div>
 
@@ -158,67 +215,67 @@ export default function ProjectsSection() {
       {/* List */}
       
       <ul className="max-w-4xl mx-auto w-full gap-4">
-        {cards.map((card) => (
-        <LinkPreview
-            key={`card-${card.title}-${id}`}
-            url={card.ctaLink} // URL link
-            isStatic={true} // Gunakan gambar statis
-            imageSrc={card.src} // Gambar sesuai card
-            width={200}
-            height={125}
-            quality={80}
-            className="block"
-          >
-            <motion.div
-              layoutId={`card-${card.title}-${id}`}
-              onClick={(e) => {
-                e.preventDefault(); // cegah LinkPreview melakukan redirect
-                setActive(card); // buka modal detail
-              }}
-              className="p-10 flex flex-col md:flex-row justify-between items-center rounded-xl cursor-pointer"
+          {cards.map((card) => (
+            <LinkPreview
+              key={`card-${card.title}-${id}`}
+              url={card.ctaLink}
+              isStatic={true}
+              imageSrc={card.src}
+              width={200}
+              height={125}
+              quality={80}
+              className="block"
             >
-              <div className="flex gap-4 flex-col justify-between items-center md:flex-row">
-                {/* Image */}
-                <motion.div layoutId={`image-${card.title}-${id}`}>
-                  <Image
-                    width={200}
-                    height={200}
-                    src={card.src}
-                    alt={card.title}
-                    className="h-40 w-40 md:h-28 md:w-28 rounded-lg object-cover object-top"
-                  />
-                </motion.div>
+              <motion.div
+                layoutId={`card-${card.title}-${id}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setActive(card);
+                }}
+                className="project-card will-change-transform p-10 flex flex-col md:flex-row justify-between items-center rounded-xl cursor-pointer"
+              >
+                <div className="flex gap-4 flex-col justify-between items-center md:flex-row">
+                  {/* Image */}
+                  <motion.div layoutId={`image-${card.title}-${id}`}>
+                    <Image
+                      width={200}
+                      height={200}
+                      src={card.src}
+                      alt={card.title}
+                      className="h-40 w-40 md:h-28 md:w-28 rounded-lg object-cover object-top"
+                    />
+                  </motion.div>
 
-                {/* Info */}
-                <div className="flex flex-col justify-center items-center text-start">
-                  <motion.h3
-                    layoutId={`title-${card.title}-${id}`}
-                    className="font-medium text-neutral-800 dark:text-neutral-200 text-2xl"
-                  >
-                    {card.title}
-                  </motion.h3>
+                  {/* Info */}
+                  <div className="flex flex-col justify-start  items-start lg:text-start text-center">
+                    <motion.h3
+                      layoutId={`title-${card.title}-${id}`}
+                      className="font-medium text-neutral-800 dark:text-neutral-200 text-2xl "
+                    >
+                      {card.title}
+                    </motion.h3>
 
-                  {/* Stack */}
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {card.stack.map((tech, i) => (
-                      <span
-                        key={i}
-                        className="bg-[#5294ff] text-black border-1 border-[#131313] px-3 py-1 text-[13px] rounded-full"
-                      >
-                        {tech}
-                      </span>
-                    ))}
+                    {/* Stack */}
+                    <div className="flex flex-wrap gap-1 mt-2 items-center justify-center md:justify-start">
+                      {card.stack.map((tech, i) => (
+                        <span
+                          key={i}
+                          className="bg-[#5294ff] text-black border-1 border-[#131313] px-3 py-1 text-[13px] rounded-full"
+                        >
+                          {tech}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <Button className="px-4 py-2 text-sm rounded-full font-bold bg-gray-100 hover:bg-[#5294ff] hover:border-2 hover:border-[#1a1a1b] text-black mt-4 md:mt-0">
-                {card.ctaText}
-              </Button>
-            </motion.div>
-          </LinkPreview>
-      ))}
-      </ul>
+                <Button className="px-4 py-2 text-sm rounded-full font-bold bg-gray-100 hover:bg-[#5294ff] hover:border-2 hover:border-[#1a1a1b] text-black mt-4 md:mt-0">
+                  {card.ctaText}
+                </Button>
+              </motion.div>
+            </LinkPreview>
+          ))}
+        </ul>
 
     </>
   );
@@ -252,48 +309,117 @@ export const CloseIcon = () => (
 // Data
 const cards = [
   {
-    title: "Summertime Sadness",
-    description: "Lana Del Rey",
-    stack: ["React", "Next.js", "TailwindCSS"],
-    uiStack: ["Framer Motion", "Shadcn UI"],
-    src: "https://assets.aceternity.com/demos/lana-del-rey.jpeg",
+    title: "Mobile App for Identifying Mangrove Species",
+    description: "Mobile Application for Identifying Mangrove Species Using Deep Learning Faster R-CNN Algorithm.",
+    stack: ["Deep Learning", "React Native", "Typescript", "FastAPI", "Docker"],
+    uiStack: ["", ""],
+    src: "https://i.imgur.com/8sfypcx.jpeg",
     ctaText: "Read More",
-    ctaLink: "https://ui.aceternity.com/templates",
+    ctaLink: "",
     content: () => (
       <p>
-          Lana Del Rey, an iconic American singer-songwriter, is celebrated for
-          her melancholic and cinematic music style. Born Elizabeth Woolridge
-          Grant in New York City, she has captivated audiences worldwide with
-          her haunting voice and introspective lyrics. <br /> <br /> Her songs
-          often explore themes of tragic romance, glamour, and melancholia,
-          drawing inspiration from both contemporary and vintage pop culture.
-          With a career that has seen numerous critically acclaimed albums, Lana
-          Del Rey has established herself as a unique and influential figure in
-          the music industry, earning a dedicated fan base and numerous
-          accolades.
+          This application is designed to identify mangrove species using object detection techniques in deep learning, 
+          specifically by implementing the Faster R-CNN algorithm. 
+          It is developed as part of my undergraduate thesis project.
         </p>
     ),
   },
   {
-    title: "Mitran Di Chhatri",
-    description: "Babbu Maan",
-    stack: ["Vue", "Nuxt", "TailwindCSS"],
-    uiStack: ["Vuetify", "GSAP"],
-    src: "https://assets.aceternity.com/demos/babbu-maan.jpeg",
+    title: "Dungong App",
+    description: "Application for Dungong Conservation and Education",
+    stack: ["Laravel12", "GIS", "ReactJS", "Typescript", "MySQL"],
+    uiStack: ["", ""],
+    src: "https://i.imgur.com/QeGHoKd.png",
     ctaText: "Read More",
-    ctaLink: "https://ui.aceternity.com/templates",
+    ctaLink: "",
     content: () => (
       <p>
-          Babu Maan, a legendary Punjabi singer, is renowned for his soulful
-          voice and profound lyrics that resonate deeply with his audience. Born
-          in the village of Khant Maanpur in Punjab, India, he has become a
-          cultural icon in the Punjabi music industry. <br /> <br /> His songs
-          often reflect the struggles and triumphs of everyday life, capturing
-          the essence of Punjabi culture and traditions. With a career spanning
-          over two decades, Babu Maan has released numerous hit albums and
-          singles that have garnered him a massive fan following both in India
-          and abroad.
+         This application is designed to support the conservation and education of the Dugon.
         </p>
     ),
+  },
+  {
+    title: "AMI App",
+    description: "Application for System Audit Mutu Internal",
+    stack: ["Codeigniter", "MySQL"],
+    uiStack: ["", ""],
+    src: "https://i.imgur.com/48hSMxm.png",
+    ctaText: "Read More",
+    ctaLink: "https://siaudi.umrah.ac.id/",
+    content: () => (
+      <p>
+         This application is Internal Quality Audit System for an institution at Raja Ali Haji Maritime University (UMRAH), Tanjung Pinang
+        </p>
+    ),
+  },
+  {
+    title: "PixelPivortEngine",
+    description: "Game Enginer develop using Java",
+    stack: ["Java"],
+    uiStack: ["", ""],
+    src: "https://i.imgur.com/co52Lut.png",
+    ctaText: "Read More",
+    ctaLink: "",
+    content: () => (
+      <p>
+         This is a game engine developed using Java, designed to create 2D games with pixel art style.
+      </p>
+    ),
+  },
+  {
+    title: "LiterasiKita App",
+    description: "Application for Literacy Program",
+    stack: ["ReactJS", "TailwindCSS", "ExpressJS", "MongoDB", "Midtrans"],
+    uiStack: ["", ""],
+    src: "https://i.imgur.com/Ry8cCLH.png",
+    ctaText: "Read More",
+    ctaLink: "https://literasikita.netlify.app",
+    content: () => (
+      <p>
+          Literasi Kita, an application that provides online books and learning videos to foster reading interest among children under 18. The app enables easy access without the need to purchase physical books.
+      </p>
+    ),
+  },
+  {
+    title: "FlightGo App",
+    description: "Application for Booking Ticket Flight",
+    stack: ["React Native", "RestAPI", "ExpressJS", "MySQL" ],
+    uiStack: ["", ""],
+    src: "https://i.imgur.com/gK3xC3z.png",
+    ctaText: "Read More",
+    ctaLink: "",
+    content: () => (
+      <p>
+          Literasi Kita, an application  for booking ticket flight
+      </p>
+    )
+  },
+  {
+    title: "SICERDIK",
+    description: "Application for Education ",
+    stack: ["ReactJS", "RestAPI", "ExpressJS", "MongoDB" ],
+    uiStack: ["", ""],
+    src: "https://i.imgur.com/3fB6Ps3.png",
+    ctaText: "Read More",
+    ctaLink: "https://sicerdik.tanjungpinangkota.go.id",
+    content: () => (
+      <p>
+         Creating SICERDIK, a web-based platform that simplifies and digitizes the student school transfer process.
+      </p>
+    )
+  },
+  {
+    title: "Portal DISKOMINFO",
+    description: "Application for Diskominfo Provinsi Kepulauan Riau",
+    stack: ["NextJS", "RestAPI", "Laravel", "MySQL", "Typescript" ],
+    uiStack: ["", ""],
+    src: "https://i.imgur.com/qvF2RQ9.png",
+    ctaText: "Read More",
+    ctaLink: "",
+    content: () => (
+      <p>
+          Developing the provincial portal website, built an online internship registration system, and collaborated with the team to create OPD templates for institutional use
+      </p>
+    )
   },
 ];

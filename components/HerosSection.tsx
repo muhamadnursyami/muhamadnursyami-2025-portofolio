@@ -26,7 +26,7 @@ export default function HerosSection() {
                   <p className="max-w-xl mx-auto text-sm text-center  md:text-lg py-2 md:py-10 text-neutral-700 dark:text-neutral-400 md:text-start ">
                     I am a passionate Fullstack Software Engineer from Indonesia with experience in building   Web and Mobile Applications 
                   </p>
-                  <Link href="#">
+                  <Link href="/Software_Engineer_MuhamadNurSyami_2025.pdf" target="_blank">
                     <Button variant="default" className="font-bold mb-3 md:mb-0">My Resume &rarr;</Button>
                   </Link>
                   

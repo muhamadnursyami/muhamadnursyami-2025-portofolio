@@ -8,12 +8,15 @@ import {
 import React, { useEffect, useRef, useState } from "react";
 import ScrollReveal from '@/components/ScrollReveal/ScrollReveal';
 import ScrollFloat from "../ScrollFloat/ScrollFloat";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 interface TimelineEntry {
   title: string;
   content: React.ReactNode;
 }
 
 export const Timeline = ({ data }: { data: TimelineEntry[] }) => {
+  
   const ref = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [height, setHeight] = useState(0);
@@ -32,7 +35,41 @@ export const Timeline = ({ data }: { data: TimelineEntry[] }) => {
 
   const heightTransform = useTransform(scrollYProgress, [0, 1], [0, height]);
   const opacityTransform = useTransform(scrollYProgress, [0, 0.1], [0, 1]);
+  // 🟢 Animasi fade in/out on scroll dengan GSAP
+  useEffect(() => {
+    if (typeof window === "undefined") return;
 
+    gsap.registerPlugin(ScrollTrigger);
+
+    // Scope animasi ke dalam ref (biar gampang cleanup)
+    const ctx = gsap.context(() => {
+      // Ambil semua elemen yang ingin dianimasi
+      const items = gsap.utils.toArray<HTMLElement>(".tl-anim");
+
+      // State awal: invisible & turun 40px
+      gsap.set(items, { autoAlpha: 0, y: 40 });
+
+      items.forEach((el, i) => {
+        gsap.to(el, {
+          autoAlpha: 1,
+          y: 0,
+          duration: 0.6,
+          ease: "power2.out",
+          delay: i * 0.05, // stagger ringan antar item
+          scrollTrigger: {
+            trigger: el,
+            start: "top 85%",      // mulai animasi saat elemen mendekati bawah viewport
+            end: "top 40%",        // area kontrol
+            toggleActions: "play none none reverse", 
+            // ↑ play saat masuk, reverse saat keluar (fade-out ketika discroll naik)
+            // kalau mau sekali main, pakai: "play none none none"
+          },
+        });
+      });
+    }, ref); // semua querySelector & trigger terscope di ref.current
+
+    return () => ctx.revert(); // cleanup semua ScrollTrigger & animasi dalam scope
+  }, []);
   return (
     <div
       className="w-full  font-sans md:px-10"
@@ -61,12 +98,12 @@ export const Timeline = ({ data }: { data: TimelineEntry[] }) => {
               <div className="h-10 absolute left-3 md:left-3 w-10 rounded-full bg-white dark:bg-black flex items-center justify-center">
                 <div className="h-4 w-4 rounded-full bg-neutral-200 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 p-2" />
               </div>
-              <h3 className="hidden md:block text-xl md:pl-20 md:text-4xl font-bold text-neutral-500 dark:text-neutral-500 ">
+              <h3 className="tl-anim hidden md:block text-xl md:pl-20 md:text-4xl font-bold text-neutral-500 dark:text-neutral-500 ">
                 {item.title}
               </h3>
             </div>
 
-            <div className="relative pl-20 pr-4 md:pl-4 w-full">
+            <div className="tl-anim relative pl-20 pr-4 md:pl-4 w-full">
               <h3 className="md:hidden block text-2xl mb-4 text-left font-bold text-neutral-500 dark:text-neutral-500">
                 {item.title}
               </h3>
@@ -85,7 +122,7 @@ export const Timeline = ({ data }: { data: TimelineEntry[] }) => {
               height: heightTransform,
               opacity: opacityTransform,
             }}
-            className="absolute inset-x-0 top-0  w-[2px] bg-gradient-to-t from-purple-500 via-blue-500 to-transparent from-[0%] via-[10%] rounded-full"
+            className="absolute inset-x-0 top-0  w-[2px] bg-gradient-to-t from-green-500 via-blue-500 to-transparent from-[0%] via-[10%] rounded-full"
           />
         </div>
       </div>
